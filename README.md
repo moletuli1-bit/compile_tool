@@ -1,6 +1,6 @@
 # compile
 
-A small PowerShell script that compiles a C++ source file with `g++` and installs the resulting executable into a central tools folder, so you can run it from anywhere in your terminal.
+A small PowerShell script that compiles a C++ source file with `g++` and puts the executable in the folder you ran it from. Run it from your project folder and the `.exe` ends up right next to your `.cpp`.
 
 ## Usage
 
@@ -11,25 +11,32 @@ compile <source_name> [executable_name]
 - `source_name`: the name of your `.cpp` file, **without** the extension.
 - `executable_name` *(optional)*: the name for the built `.exe`, without the extension. Defaults to `source_name`.
 
+Run the command from the folder that contains your source file.
+
 ### Examples
 
 ```powershell
+cd C:\path\to\file_finder
 compile file_finder          # builds file_finder.cpp -> file_finder.exe
 compile file_finder ff       # builds file_finder.cpp -> ff.exe
 ```
 
-If the build succeeds, the executable is copied to `C:\tools\` (overwriting any previous version). If it fails, the compiler errors are shown and `Build failed...` is printed, and nothing is copied.
+On success it prints `Build succeeded...`. On failure it shows the compiler errors and prints `Build failed...`.
+
+Compiler warnings (such as an unused parameter) are shown but don't stop the build.
 
 ## Requirements
 
 - Windows with PowerShell
 - `g++` installed and available on your `PATH` (for example via [MSYS2](https://www.msys2.org/) or MinGW-w64)
   - Check with: `g++ --version`
-- A `C:\tools` folder that is on your system `PATH`
+- A folder for your scripts (this README uses `C:\tools`) that is on your system `PATH`, so `compile` works from any directory
 
 ## Installation
 
-1. **Create the tools folder** (skip if it already exists):
+You only install the script itself. Programs you build stay in their own project folders.
+
+1. **Create a folder for your scripts** (skip if it already exists):
 
    ```powershell
    mkdir C:\tools
@@ -41,7 +48,7 @@ If the build succeeds, the executable is copied to `C:\tools\` (overwriting any 
    [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools", "User")
    ```
 
-3. **Copy the script into the tools folder:**
+3. **Copy the script into that folder:**
 
    ```powershell
    Copy-Item .\compile.ps1 C:\tools\ -Force
@@ -65,27 +72,25 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 ## How it works
 
-The script has two steps:
-
 1. **Compile** the source with `g++`, using the flags `-Wall -Wextra -g -std=c++20`:
    - `-Wall -Wextra` enable extra compiler warnings
    - `-g` includes debug information
    - `-std=c++20` uses the C++20 standard
-2. **Install**: if `g++` exited successfully (`$LASTEXITCODE` is `0`), copy the executable to `C:\tools\`.
+2. **Report the result**: if `g++` exited successfully (`$LASTEXITCODE` is `0`), print a success message. Otherwise, print a failure message.
 
-The built `.exe` also stays in the folder you ran the command from, which is handy for local testing.
+`g++` runs in whatever directory you're currently in, so the source is read from there and the executable is written there.
 
 ## Notes
 
 - Don't include the `.cpp` extension in the arguments. The script adds it for you, so `compile file_finder.cpp` would look for `file_finder.cpp.cpp`.
-- The install location (`C:\tools`) is hardcoded. To use a different folder, edit the `Copy-Item` line in `compile.ps1`.
+- The executable is created in your **current directory**. That's the same as the source's folder as long as you run the command from inside the project folder.
 
 ## Example project
 
-`file_finder` is a small C++ tool built with this script. Build and install it with:
+`file_finder` is a small C++ tool built with this script:
 
 ```powershell
+cd C:\path\to\file_finder
 compile file_finder
+.\file_finder.exe
 ```
-
-Then run `file_finder` from any terminal location.
